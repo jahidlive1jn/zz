@@ -1,81 +1,36 @@
-name: Non-Stop 24/7 YouTube Live Stream
+name: 24/7 YouTube Live Stream
 
 on:
-  schedule:
-    # প্রতি 4 ঘন্টায় একবার - overlap নিশ্চিত করতে
-    - cron: '0 */4 * * *'    # 00:00, 04:00, 08:00, 12:00, 16:00, 20:00
-    - cron: '30 */4 * * *'   # 00:30, 04:30, 08:30, 12:30, 16:30, 20:30
-    - cron: '15 1-23/4 * * *'  # 01:15, 05:15, 09:15, 13:15, 17:15, 21:15
-    - cron: '45 2-23/4 * * *'  # 02:45, 06:45, 10:45, 14:45, 18:45, 22:45
-  
-  workflow_dispatch:  # Manual trigger option
-  
+  workflow_dispatch:
   push:
     branches: [ main ]
 
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 330  # 5.5 ঘন্টা (overlap এর জন্য)
-    
-    # Concurrency control - same stream can run multiple times
-    concurrency:
-      group: youtube-stream-${{ github.run_id }}
-      cancel-in-progress: false  # Don't cancel running streams
-    
+
     steps:
-      - name: 📥 Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v3
-      
-      - name: 🐍 Setup Python 3.11
+
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
-      
-      - name: 📦 Install FFmpeg (Optimized)
+          python-version: "3.10"
+
+      - name: Install FFmpeg
         run: |
-          echo "📦 Installing FFmpeg with optimizations..."
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends ffmpeg
-          echo "✅ FFmpeg installed!"
-          ffmpeg -version | head -n 1
-      
-      - name: 📚 Install Python Dependencies
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Requirements
         run: |
-          echo "📚 Installing dependencies..."
-          pip install --upgrade pip --quiet
-          pip install -r requirements.txt --quiet
-          echo "✅ Dependencies ready!"
-      
-      - name: 🎬 Start Non-Stop YouTube Live Stream
+          pip install -r requirements.txt
+
+      - name: Start Stream
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           VIDEO_URL: ${{ secrets.VIDEO_URL }}
           VIDEO_QUALITY: ${{ secrets.VIDEO_QUALITY }}
         run: |
-          echo "=================================================="
-          echo "🎬 NON-STOP 24/7 YouTube Live Stream"
-          echo "=================================================="
-          echo "⏰ Start time: $(date '+%Y-%m-%d %H:%M:%S %Z')"
-          echo "🌍 Server: GitHub Actions (ubuntu-latest)"
-          echo "💻 Your PC: Can be OFF!"
-          echo "🔄 This run: Will stream for ~5.5 hours"
-          echo "📅 Next run: Already scheduled (overlap mode)"
-          echo "=================================================="
           python streamer.py
-      
-      - name: 📊 Stream Summary
-        if: always()
-        run: |
-          echo "=================================================="
-          echo "📊 Stream Session Completed"
-          echo "=================================================="
-          echo "⏰ End time: $(date '+%Y-%m-%d %H:%M:%S %Z')"
-          echo "🔄 Next stream: Already running or starting soon"
-          echo "✅ Status: Normal completion"
-          echo "=================================================="
-          echo ""
-          echo "💡 Multiple workflows run simultaneously to ensure"
-          echo "   24/7 coverage with no gaps!"
-          echo "=================================================="
